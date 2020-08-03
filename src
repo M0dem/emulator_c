@@ -1,0 +1,5 @@
+mov 5 ax
+mov ax cx
+push 16
+push 10
+pop dx
