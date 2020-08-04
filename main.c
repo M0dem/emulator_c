@@ -134,36 +134,50 @@ void mov (char* op_a, char* op_b, int* registers)
 }
 
 // push [data/reg]
-void push (char* op, int* registers, struct Stack stack)
-{
-	stack.stack[stack.i] = to_data(op, registers);
-	++stack.i;
+void push (char* op, int* registers, struct Stack* stack)
+{	
+	stack->stack[stack->i++] = to_data(op, registers);
 }
 
 // pop [reg]
-void pop (char* op, int* registers, struct Stack stack)
+void pop (char* op, int* registers, struct Stack* stack)
 {
 	if (!strcmp(op, "ax"))
-		registers[AX] = stack.stack[--stack.i];
+		registers[AX] = stack->stack[--stack->i];
 	else if (!strcmp(op, "bx"))
-		registers[BX] = stack.stack[--stack.i];
+		registers[BX] = stack->stack[--stack->i];
 	else if (!strcmp(op, "cx"))
-		registers[CX] = stack.stack[--stack.i];
+		registers[CX] = stack->stack[--stack->i];
 	else if (!strcmp(op, "dx"))
-		registers[DX] = stack.stack[--stack.i];
+	{
+		registers[DX] = stack->stack[--stack->i];
+	}
 	else
 		return;
 	
-	stack.stack[stack.i] = 0;
+	//stack.stack[stack.i] = 0;
+	//--stack.i;
 }
 
-void run_src (char** src, int file_len, int* registers, struct Stack stack)
+// add [data/reg] [reg]
+void add (char* op_a, char* op_b, int* registers)
+{
+	if (!strcmp(op_b, "ax"))
+		registers[AX] += to_data(op_a, registers);
+	else if (!strcmp(op_b, "bx"))
+		registers[BX] += to_data(op_a, registers);
+	else if (!strcmp(op_b, "cx"))
+		registers[CX] += to_data(op_a, registers);
+	else if (!strcmp(op_b, "dx"))
+		registers[DX] += to_data(op_a, registers);
+}
+
+void run_src (char** src, int file_len, int* registers, struct Stack* stack)
 {
 	char* tok;
 	for (int i = 0; i < file_len; ++i)
 	{
 		tok = strtok(src[i], " ");
-		printf("\t%s\n", tok);
 		if (!strcmp(tok, "mov"))
 		{
 			char* data = strtok(NULL, " ");
@@ -174,6 +188,12 @@ void run_src (char** src, int file_len, int* registers, struct Stack stack)
 			push(strtok(NULL, " "), registers, stack);
 		else if (!strcmp(tok, "pop"))
 			pop(strtok(NULL, " "), registers, stack);
+		else if (!strcmp(tok, "add"))
+		{
+			char* data = strtok(NULL, " ");
+			char* reg = strtok(NULL, " ");
+			add(data, reg, registers);
+		}
 		else
 			continue;		
 	}
@@ -195,11 +215,11 @@ void print_reg (int* registers)
 	printf("dx: %d\n", registers[3]);
 }
 
-void print_stack(struct Stack stack)
+void print_stack(struct Stack* stack)
 {
 	printf("{");
-	for (int i = 0; i <= stack.i; ++i)
-		printf("%d, ", stack.stack[stack.i]);
+	for (int i = 0; i <= stack->i; ++i)
+		printf("%d, ", stack->stack[i]);
 
 	printf("}\n");
 }
@@ -211,9 +231,11 @@ int main ()
 	int buffer_len = get_file_buffer_len(filename);
 	char** src = get_src("src", file_len, buffer_len);
 	
-	struct Stack stack;
-	stack.stack = calloc(10, sizeof(int));
-	stack.i = 0;
+	struct Stack temp_stack;
+	temp_stack.stack = calloc(10, sizeof(int));
+	temp_stack.i = 0;
+
+	struct Stack* stack = &temp_stack;
 
 	int* registers = calloc(4, sizeof(int));
 	
@@ -223,7 +245,7 @@ int main ()
 	print_stack(stack);
 
 	free(registers);
-	free(stack.stack);
+	free(stack->stack);
 	free_src(src, file_len);
 	
 	return 0;

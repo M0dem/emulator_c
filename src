@@ -1,5 +1,6 @@
-mov 5 ax
-mov ax cx
-push 16
-push 10
+mov 67 bx
+mov bx ax
+push 5
+push 6
 pop dx
+add dx ax
